@@ -1,5 +1,5 @@
-clint - static code checker for C++
-=====================================
+clint - static code checker for C
+=================================
 
 .. image:: https://img.shields.io/pypi/v/clint.svg
     :target: https://pypi.python.org/pypi/clint
