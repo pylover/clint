@@ -3,7 +3,7 @@
 from setuptools import setup, Command
 from subprocess import check_call
 from distutils.spawn import find_executable
-import cpplint as cpplint
+import clint as clint
 
 class Cmd(Command):
     '''
@@ -33,7 +33,7 @@ class Lint(Cmd):
     executable = 'pylint'
 
     def run(self):
-        self.execute('cpplint.py')
+        self.execute('clint.py')
 
 # some pip versions bark on comments (e.g. on travis)
 def read_without_comments(filename):
@@ -42,20 +42,20 @@ def read_without_comments(filename):
 
 test_required = read_without_comments('test-requirements')
 
-setup(name='cpplint',
-      version=cpplint.__VERSION__,
-      py_modules=['cpplint'],
+setup(name='clint',
+      version=clint.__VERSION__,
+      py_modules=['clint'],
       # generate platform specific start script
       entry_points={
           'console_scripts': [
-              'cpplint = cpplint:main'
+              'clint = clint:main'
           ]
       },
       install_requires=[],
-      url='https://github.com/cpplint/cpplint',
-      download_url='https://github.com/cpplint/cpplint',
-      keywords=['lint', 'python', 'c++'],
-      maintainer='cpplint Developers',
+      url='https://github.com/pylover/clint',
+      download_url='https://github.com/pylover/clint',
+      keywords=['lint', 'python', 'c'],
+      maintainer='clint Developers',
       maintainer_email='see_github@nospam.com',
       classifiers=['Programming Language :: Python',
                    'Programming Language :: Python :: 2',

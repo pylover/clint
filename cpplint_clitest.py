@@ -29,7 +29,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-"""Command Line interface integration test for cpplint.py."""
+"""Command Line interface integration test for clint.py."""
 
 import os
 import sys
@@ -39,7 +39,7 @@ import shutil
 import tempfile
 from testfixtures import compare
 
-BASE_CMD = sys.executable + ' ' + os.path.abspath('./cpplint.py ')
+BASE_CMD = sys.executable + ' ' + os.path.abspath('./clint.py ')
 
 def RunShellCommand(cmd, cwd='.'):
     """
@@ -67,13 +67,13 @@ class UsageTest(unittest.TestCase):
         (status, out, err) = RunShellCommand(BASE_CMD + ' --help')
         self.assertEqual(0, status)
         self.assertEqual(b'', out)
-        self.assertTrue(err.startswith(b'\nSyntax: cpplint'))
+        self.assertTrue(err.startswith(b'\nSyntax: clint'))
 
 class TemporaryFolderClassSetup(object):
     """
     Regression tests: The test starts a filetreewalker scanning for files name *.def
     Such files are expected to have as first line the argument
-    to a cpplint invocation from within the same directory, as second line the
+    to a clint invocation from within the same directory, as second line the
     expected status code, then the line count of stdout lines,
     then the stdout lines, and all other lines the expected
     systemerr output (two blank lines at end).

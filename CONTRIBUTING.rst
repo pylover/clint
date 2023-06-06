@@ -1,13 +1,13 @@
 Contributing guide
 ==================
 
-Thanks for your interest in contributing to cpplint.
+Thanks for your interest in contributing to clint.
 
 Any kinds of contributions are welcome: Bug reports, Documentation, Patches.
 
-However cpplint is a bit special as a project because it aims to closely follow what Google does in the upstream repository.
-That means Google remains the source of all major requirements and functionality of cpplint, where as this fork adds extensions to cpplint run on more environments and in more companies.
-The difference between this cpplint and Google should remain so small that anyone can at a glance see there is no added change that could be regarded as a security vulnerability.
+However clint is a bit special as a project because it aims to closely follow what Google does in the upstream repository.
+That means Google remains the source of all major requirements and functionality of clint, where as this fork adds extensions to clint run on more environments and in more companies.
+The difference between this clint and Google should remain so small that anyone can at a glance see there is no added change that could be regarded as a security vulnerability.
 
 Here are some tips to make best use of your time:
 
@@ -17,13 +17,13 @@ Here are some tips to make best use of your time:
 
 Goals:
 
-* Provides cpplint as a PyPI package for multiple python versions
+* Provides clint as a PyPI package for multiple python versions
 * Add a few features and fixes aimed at usages outside Google
 
 Non-Goals:
 
 * Become an independent fork adding major features
-* Fix python style issues in cpplint
+* Fix python style issues in clint
 
 
 Development
@@ -45,7 +45,7 @@ It may be okay to run and test python against locally installed libraries, but i
 
 1. (Optional) Setup a local virtual environment with all necessary tools and libraries::
 
-      mkvirtualenv cpplint [-p /usr/bin/python3]
+      mkvirtualenv clint [-p /usr/bin/python3]
       pip install .[dev]
 
 Alternatively you can locally install patches like this::
@@ -53,14 +53,14 @@ Alternatively you can locally install patches like this::
     pip install -e .[dev]
     # for usage without virtualenv, add --user
 
-You can setup your local environment for developing patches for cpplint like this:
+You can setup your local environment for developing patches for clint like this:
 
 .. code-block:: bash
 
     # run a single test
-    pytest --no-cov cpplint_unittest.py -k testExclude
+    pytest --no-cov clint_unittest.py -k testExclude
     # run a single CLI integration test
-    pytest --no-cov cpplint_clitest.py -k testSillySample
+    pytest --no-cov clint_clitest.py -k testSillySample
     # run all tests
     ./setup.py test
     ./setup.py lint
@@ -78,9 +78,9 @@ To release a new version:
 .. code-block:: bash
 
     # prepare files for release
-    vi cpplint.py # increment the version
+    vi clint.py # increment the version
     vi changelog.rst # log changes
-    git add cpplint.py changelog.rst
+    git add clint.py changelog.rst
     git commit -m "Releasing x.y.z"
     # test-release (on env by mkvirtualenv -p /usr/bin/python3)
     pip install --upgrade setuptools wheel twine
@@ -88,7 +88,7 @@ To release a new version:
     # Test release, requires account on testpypi
     python3 setup.py sdist bdist_wheel
     twine upload --repository testpypi dist/*
-    # ... Check website and downloads from https://test.pypi.org/project/cpplint/
+    # ... Check website and downloads from https://test.pypi.org/project/clint/
     # Actual release
     twine upload dist/*
     git tag x.y.z
@@ -99,14 +99,14 @@ After releasing, it is be good practice to comment on github for closed tickets,
 Catching up with Upstream
 -------------------------
 
-For maintainers, it is a regular duty to look at what cpplint changes were merged upstream, to include them in this fork (though these updates happen once per year and less).
+For maintainers, it is a regular duty to look at what clint changes were merged upstream, to include them in this fork (though these updates happen once per year and less).
 
 Checkout here and upstream google:
 
 .. code-block:: bash
 
-    git clone git@github.com:cpplint/cpplint.git
-    cd cpplint
+    git clone git@github.com:clint/clint.git
+    cd clint
     git remote add google https://github.com/google/styleguide
 
 To incorporate google's changes:
@@ -124,7 +124,7 @@ To incorporate google's changes:
     ## Rebase workflow (dirty, creates new commits)
     git checkout -b updates FETCH_HEAD
     git rebase master # this will have a lot of conflicts, most of which can be solved with the next command (run repeatedly)
-    # solve conflicts with files deleted in our fork (this is idempotent and safe to be called. when cpplint.py has conflicts, it will do nothing)
+    # solve conflicts with files deleted in our fork (this is idempotent and safe to be called. when clint.py has conflicts, it will do nothing)
     git status | grep 'new file:' | awk '{print $3}' | xargs -r git rm --cached ; git status | grep 'deleted by us' | awk '{print $4}' | xargs -r git rm
     git status --untracked-files=no | grep 'nothing to commit' && git rebase --skip
 
@@ -141,9 +141,9 @@ Setup fetching of pull requests in .git/config:
 .. code-block:: bash
 
     [remote "origin"]
-    	url = git@github.com:cpplint/cpplint.git
+    	url = git@github.com:clint/clint.git
     	fetch = +refs/heads/*:refs/remotes/origin/*
-    # following line should be new, fetches PRs from cpplint
+    # following line should be new, fetches PRs from clint
     	fetch = +refs/pull/*/head:refs/remotes/origin/pr/*
     [remote "google"]
     	url = https://github.com/google/styleguide
@@ -156,5 +156,5 @@ To compare this for with upstream (after git fetch):
 
 .. code-block:: bash
 
-    git diff google/gh-pages:cpplint/cpplint.py master:cpplint.py
-    git diff google/gh-pages:cpplint/cpplint_unittest.py master:cpplint_unittest.py
+    git diff google/gh-pages:clint/clint.py master:clint.py
+    git diff google/gh-pages:clint/clint_unittest.py master:clint_unittest.py
