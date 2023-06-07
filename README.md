@@ -26,6 +26,12 @@ For full usage instructions, run:
 prettyc --help
 ```
 
+## How to use:
+
+```bash
+prettyc --help
+```
+
 ## Development
 
 Create virtual environment.

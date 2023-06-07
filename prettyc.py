@@ -63,7 +63,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 __verbose__ = False
 
 try:
