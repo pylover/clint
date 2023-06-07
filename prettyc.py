@@ -63,7 +63,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 __verbose__ = False
 
 try:
@@ -324,7 +324,6 @@ _ERROR_CATEGORIES = [
     'readability/strings',
     'readability/todo',
     'readability/utf8',
-    'runtime/arrays',
     'runtime/casting',
     'runtime/explicit',
     'runtime/init',
@@ -5313,45 +5312,6 @@ def CheckLanguage(filename, clean_lines, linenum, file_extension,
       error(filename, linenum, 'build/namespaces', 5,
             'Do not use namespace using-directives.  '
             'Use using-declarations instead.')
-
-  # Detect variable-length arrays.
-  match = Match(r'\s*(.+::)?(\w+) [a-z]\w*\[(.+)];', line)
-  if (match and match.group(2) != 'return' and match.group(2) != 'delete' and
-      match.group(3).find(']') == -1):
-    # Split the size using space and arithmetic operators as delimiters.
-    # If any of the resulting tokens are not compile time constants then
-    # report the error.
-    tokens = re.split(r'\s|\+|\-|\*|\/|<<|>>]', match.group(3))
-    is_const = True
-    skip_next = False
-    for tok in tokens:
-      if skip_next:
-        skip_next = False
-        continue
-
-      if Search(r'sizeof\(.+\)', tok): continue
-      if Search(r'arraysize\(\w+\)', tok): continue
-
-      tok = tok.lstrip('(')
-      tok = tok.rstrip(')')
-      if not tok: continue
-      if Match(r'\d+', tok): continue
-      if Match(r'0[xX][0-9a-fA-F]+', tok): continue
-      if Match(r'k[A-Z0-9]\w*', tok): continue
-      if Match(r'(.+::)?k[A-Z0-9]\w*', tok): continue
-      if Match(r'(.+::)?[A-Z][A-Z0-9_]*', tok): continue
-      # A catch all for tricky sizeof cases, including 'sizeof expression',
-      # 'sizeof(*type)', 'sizeof(const type)', 'sizeof(struct StructName)'
-      # requires skipping the next token because we split on ' ' and '*'.
-      if tok.startswith('sizeof'):
-        skip_next = True
-        continue
-      is_const = False
-      break
-    if not is_const:
-      error(filename, linenum, 'runtime/arrays', 1,
-            'Do not use variable-length arrays.  Use an appropriately named '
-            "('k' followed by CamelCase) compile-time constant for the size.")
 
   # Check for use of unnamed namespaces in header files.  Registration
   # macros are typically OK, so we allow use of "namespace {" on lines
