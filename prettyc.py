@@ -63,7 +63,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __verbose__ = False
 
 try:
@@ -300,7 +300,6 @@ _ERROR_CATEGORIES = [
     'build/forward_decl',
     'build/header_guard',
     'build/include',
-    'build/include_subdir',
     'build/include_alpha',
     'build/include_order',
     'build/include_what_you_use',
@@ -5070,20 +5069,6 @@ def CheckIncludeLine(filename, clean_lines, linenum, include_state, error):
   fileinfo = FileInfo(filename)
   line = clean_lines.lines[linenum]
 
-  # "include" should use the new style "foo/bar.h" instead of just "bar.h"
-  # Only do this check if the included header follows google naming
-  # conventions.  If not, assume that it's a 3rd party API that
-  # requires special include conventions.
-  #
-  # We also make an exception for Lua headers, which follow google
-  # naming convention but not the include convention.
-  match = Match(r'#include\s*"([^/]+\.(.*))"', line)
-  if match:
-    if (IsHeaderExtension(match.group(2)) and
-        not _THIRD_PARTY_HEADERS_PATTERN.match(match.group(1))):
-      error(filename, linenum, 'build/include_subdir', 4,
-            'Include the directory when naming header files')
-
   # we shouldn't include a file more than once. actually, there are a
   # handful of instances where doing so is okay, but in general it's
   # not.
@@ -6677,7 +6662,7 @@ def ProcessFile(filename, vlevel, extra_check_functions=None):
 
   # # Suppress printing anything if --quiet was passed unless the error
   # # count has increased after processing this file.
-  if __verbose__ and not _prettyc_state.quiet or old_errors != _prettyc_state.error_count:
+  if __verbose__ and (not _prettyc_state.quiet or old_errors != _prettyc_state.error_count):
     _prettyc_state.PrintInfo('Done processing %s\n' % filename)
   _RestoreFilters()
 
