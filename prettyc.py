@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #
 # Copyright (c) 2009 Google Inc. All rights reserved.
 #
@@ -41,7 +40,7 @@ We do a small hack, which is to ignore //'s with "'s after them on the
 same line, but it is far from perfect (in either direction).
 """
 
-# clint predates fstrings
+# prettyc predates fstrings
 # pylint: disable=consider-using-f-string
 
 # pylint: disable=invalid-name
@@ -64,7 +63,8 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__VERSION__ = '1.6.1'
+__version__ = '1.0.1'
+__verbose__ = False
 
 try:
   #  -- pylint: disable=used-before-assignment
@@ -75,7 +75,7 @@ except NameError:
 
 
 _USAGE = """
-Syntax: clint.py [--verbose=#] [--output=emacs|eclipse|vs7|junit|sed|gsed]
+Syntax: prettyc.py [--verbose=#] [--output=emacs|eclipse|vs7|junit|sed|gsed]
                    [--filter=-x,+y,...]
                    [--counting=total|toplevel|detailed] [--root=subdir]
                    [--repository=path]
@@ -141,7 +141,7 @@ Syntax: clint.py [--verbose=#] [--output=emacs|eclipse|vs7|junit|sed|gsed]
                 --filter=-whitespace,-runtime/printf,+runtime/printf_format
                 --filter=-,+build/include_what_you_use
 
-      To see a list of all the categories used in clint, pass no arg:
+      To see a list of all the categories used in prettyc, pass no arg:
          --filter=
 
     counting=total|toplevel|detailed
@@ -217,7 +217,7 @@ Syntax: clint.py [--verbose=#] [--output=emacs|eclipse|vs7|junit|sed|gsed]
         --exclude=src/*.cc --exclude=test/*.cc
 
     extensions=extension,extension,...
-      The allowed file extensions that clint will check
+      The allowed file extensions that prettyc will check
 
       Examples:
         --extensions=%s
@@ -232,7 +232,7 @@ Syntax: clint.py [--verbose=#] [--output=emacs|eclipse|vs7|junit|sed|gsed]
       included are those of the C-standard lib and closely related ones.
 
     headers=x,y,...
-      The header extensions that clint will treat as .h in checks. Values are
+      The header extensions that prettyc will treat as .h in checks. Values are
       automatically added to --extensions list.
      (by default, only files with extensions %s will be assumed to be headers)
 
@@ -241,8 +241,8 @@ Syntax: clint.py [--verbose=#] [--output=emacs|eclipse|vs7|junit|sed|gsed]
         --headers=hpp,hxx
         --headers=hpp
 
-    clint.py supports per-directory configurations specified in CLINT.cfg
-    files. CLINT.cfg file can contain a number of key=value pairs.
+    prettyc.py supports per-directory configurations specified in .prettyc
+    files. .prettyc file can contain a number of key=value pairs.
     Currently the following options are supported:
 
       set noparent
@@ -252,7 +252,7 @@ Syntax: clint.py [--verbose=#] [--output=emacs|eclipse|vs7|junit|sed|gsed]
       root=subdir
       headers=x,y,...
 
-    "set noparent" option prevents clint from traversing directory tree
+    "set noparent" option prevents prettyc from traversing directory tree
     upwards looking for more .cfg files in parent directories. This option
     is usually placed in the top-level project directory.
 
@@ -267,12 +267,12 @@ Syntax: clint.py [--verbose=#] [--output=emacs|eclipse|vs7|junit|sed|gsed]
     "linelength" allows to specify the allowed line length for the project.
 
     The "root" option is similar in function to the --root flag (see example
-    above). Paths are relative to the directory of the CLINT.cfg.
+    above). Paths are relative to the directory of the .prettyc.
 
     The "headers" option is similar in function to the --headers flag
     (see example above).
 
-    CLINT.cfg has an effect on files in the same directory and all
+    .prettyc has an effect on files in the same directory and all
     sub-directories, unless overridden by a nested configuration file.
 
       Example file:
@@ -286,9 +286,9 @@ Syntax: clint.py [--verbose=#] [--output=emacs|eclipse|vs7|junit|sed|gsed]
 """
 
 # We categorize each error message we print.  Here are the categories.
-# We want an explicit list so we can list them all in clint --filter=.
+# We want an explicit list so we can list them all in prettyc --filter=.
 # If you add a new error message with a new category, add it to the list
-# here!  clint_unittest.py should tell you if you forget to do this.
+# here!  prettyc_unittest.py should tell you if you forget to do this.
 _ERROR_CATEGORIES = [
     'build/class',
     'build/c++11',
@@ -328,7 +328,6 @@ _ERROR_CATEGORIES = [
     'runtime/arrays',
     'runtime/casting',
     'runtime/explicit',
-    'runtime/int',
     'runtime/init',
     'runtime/invalid_increment',
     'runtime/member_string_references',
@@ -368,7 +367,7 @@ _MACHINE_OUTPUTS = [
   'gsed'
 ]
 
-# These error categories are no longer enforced by clint, but for backwards-
+# These error categories are no longer enforced by prettyc, but for backwards-
 # compatibility they may still appear in NOLINT comments.
 _LEGACY_ERROR_CATEGORIES = [
     'readability/streams',
@@ -823,7 +822,7 @@ _ALT_TOKEN_REPLACEMENT = {
 # bit is meant to avoid matching these keywords outside of boolean expressions.
 #
 # False positives include C-style multi-line comments and multi-line strings
-# but those have always been troublesome for clint.
+# but those have always been troublesome for prettyc.
 _ALT_TOKEN_REPLACEMENT_PATTERN = re.compile(
     r'[ =()](' + ('|'.join(_ALT_TOKEN_REPLACEMENT.keys())) + r')(?=[ (]|$)')
 
@@ -1275,7 +1274,7 @@ class _IncludeState(object):
     return ''
 
 
-class _CLintState(object):
+class _PrettyCState(object):
   """Maintains module-wide state.."""
 
   def __init__(self):
@@ -1406,7 +1405,7 @@ class _CLintState(object):
     testsuite = xml.etree.ElementTree.Element('testsuite')
     testsuite.attrib['errors'] = str(num_errors)
     testsuite.attrib['failures'] = str(num_failures)
-    testsuite.attrib['name'] = 'clint'
+    testsuite.attrib['name'] = 'prettyc'
 
     if num_errors == 0 and num_failures == 0:
       testsuite.attrib['tests'] = str(1)
@@ -1443,45 +1442,45 @@ class _CLintState(object):
     return xml_decl + xml.etree.ElementTree.tostring(testsuite, 'utf-8').decode('utf-8')
 
 
-_clint_state = _CLintState()
+_prettyc_state = _PrettyCState()
 
 
 def _OutputFormat():
   """Gets the module's output format."""
-  return _clint_state.output_format
+  return _prettyc_state.output_format
 
 
 def _SetOutputFormat(output_format):
   """Sets the module's output format."""
-  _clint_state.SetOutputFormat(output_format)
+  _prettyc_state.SetOutputFormat(output_format)
 
 def _Quiet():
   """Return's the module's quiet setting."""
-  return _clint_state.quiet
+  return _prettyc_state.quiet
 
 def _SetQuiet(quiet):
   """Set the module's quiet status, and return previous setting."""
-  return _clint_state.SetQuiet(quiet)
+  return _prettyc_state.SetQuiet(quiet)
 
 
 def _VerboseLevel():
   """Returns the module's verbosity setting."""
-  return _clint_state.verbose_level
+  return _prettyc_state.verbose_level
 
 
 def _SetVerboseLevel(level):
   """Sets the module's verbosity, and returns the previous setting."""
-  return _clint_state.SetVerboseLevel(level)
+  return _prettyc_state.SetVerboseLevel(level)
 
 
 def _SetCountingStyle(level):
   """Sets the module's counting options."""
-  _clint_state.SetCountingStyle(level)
+  _prettyc_state.SetCountingStyle(level)
 
 
 def _Filters():
   """Returns the module's list of output filters, as a list."""
-  return _clint_state.filters
+  return _prettyc_state.filters
 
 
 def _SetFilters(filters):
@@ -1494,7 +1493,7 @@ def _SetFilters(filters):
     filters: A string of comma-separated filters (eg "whitespace/indent").
              Each filter should start with + or -; else we die.
   """
-  _clint_state.SetFilters(filters)
+  _prettyc_state.SetFilters(filters)
 
 def _AddFilters(filters):
   """Adds more filter overrides.
@@ -1506,15 +1505,15 @@ def _AddFilters(filters):
     filters: A string of comma-separated filters (eg "whitespace/indent").
              Each filter should start with + or -; else we die.
   """
-  _clint_state.AddFilters(filters)
+  _prettyc_state.AddFilters(filters)
 
 def _BackupFilters():
   """ Saves the current filter list to backup storage."""
-  _clint_state.BackupFilters()
+  _prettyc_state.BackupFilters()
 
 def _RestoreFilters():
   """ Restores filters previously backed up."""
-  _clint_state.RestoreFilters()
+  _prettyc_state.RestoreFilters()
 
 class _FunctionState(object):
   """Tracks current function name and the number of lines in its body."""
@@ -1694,7 +1693,7 @@ def _ShouldPrintError(category, confidence, linenum):
   if IsErrorSuppressedByNolint(category, linenum):
     return False
 
-  if confidence < _clint_state.verbose_level:
+  if confidence < _prettyc_state.verbose_level:
     return False
 
   is_filtered = False
@@ -1721,7 +1720,7 @@ def Error(filename, linenum, category, confidence, message):
   not a misidentification or a use that's sometimes justified.
 
   False positives can be suppressed by the use of
-  "clint(category)"  comments on the offending line.  These are
+  "prettyc(category)"  comments on the offending line.  These are
   parsed into _error_suppressions.
 
   Args:
@@ -1736,19 +1735,19 @@ def Error(filename, linenum, category, confidence, message):
     message: The error message.
   """
   if _ShouldPrintError(category, confidence, linenum):
-    _clint_state.IncrementErrorCount(category)
-    if _clint_state.output_format == 'vs7':
-      _clint_state.PrintError('%s(%s): error clint: [%s] %s [%d]\n' % (
+    _prettyc_state.IncrementErrorCount(category)
+    if _prettyc_state.output_format == 'vs7':
+      _prettyc_state.PrintError('%s(%s): error prettyc: [%s] %s [%d]\n' % (
           filename, linenum, category, message, confidence))
-    elif _clint_state.output_format == 'eclipse':
+    elif _prettyc_state.output_format == 'eclipse':
       sys.stderr.write('%s:%s: warning: %s  [%s] [%d]\n' % (
           filename, linenum, message, category, confidence))
-    elif _clint_state.output_format == 'junit':
-      _clint_state.AddJUnitFailure(filename, linenum, message, category,
+    elif _prettyc_state.output_format == 'junit':
+      _prettyc_state.AddJUnitFailure(filename, linenum, message, category,
           confidence)
-    elif _clint_state.output_format in ['sed', 'gsed']:
+    elif _prettyc_state.output_format in ['sed', 'gsed']:
       if message in _SED_FIXUPS:
-        sys.stdout.write(_clint_state.output_format + " -i '%s%s' %s # %s  [%s] [%d]\n" % (
+        sys.stdout.write(_prettyc_state.output_format + " -i '%s%s' %s # %s  [%s] [%d]\n" % (
             linenum, _SED_FIXUPS[message], filename, message, category, confidence))
       else:
         sys.stderr.write('# %s:%s:  "%s"  [%s] [%d]\n' % (
@@ -1844,7 +1843,7 @@ def CleanseRawStrings(raw_lines):
       # comment.  It's done this way because we remove raw strings
       # before removing comments as opposed to removing comments
       # before removing raw strings.  This is because there are some
-      # clint checks that requires the comments to be preserved, but
+      # prettyc checks that requires the comments to be preserved, but
       # we don't want to check comments that are inside raw strings.
       matched = Match(r'^(.*?)\b(?:R|u8R|uR|UR|LR)"([^\s\\()]*)\((.*)$', line)
       if (matched and
@@ -2111,7 +2110,7 @@ def CloseExpression(clean_lines, linenum, pos):
   If lines[linenum][pos] points to a '(' or '{' or '[' or '<', finds the
   linenum/pos that correspond to the closing of the expression.
 
-  TODO(unknown): clint spends a fair bit of time matching parentheses.
+  TODO(unknown): prettyc spends a fair bit of time matching parentheses.
   Ideally we would want to index all opening and closing parentheses once
   and have CloseExpression be just a simple lookup, but due to preprocessor
   tricks, this is not so easy.
@@ -2329,7 +2328,7 @@ def GetHeaderGuardCPPVariable(filename):
 
   """
 
-  # Restores original filename in case that clint is invoked from Emacs's
+  # Restores original filename in case that prettyc is invoked from Emacs's
   # flymake.
   filename = re.sub(r'_flymake\.h$', '.h', filename)
   filename = re.sub(r'/\.flymake/([^/]*)$', r'/\1', filename)
@@ -2884,7 +2883,7 @@ class _NamespaceInfo(_BlockInfo):
     #
     # Note that we accept C style "/* */" comments for terminating
     # namespaces, so that code that terminate namespaces inside
-    # preprocessor macros can be clint clean.
+    # preprocessor macros can be prettyc clean.
     #
     # We also accept stuff like "// end of namespace <name>." with the
     # period at the end.
@@ -2948,7 +2947,7 @@ class NestingState(object):
     # saving the previous top of nesting stack.
     #
     # We could save the full stack, but we only need the top.  Copying
-    # the full nesting stack would slow down clint by ~10%.
+    # the full nesting stack would slow down prettyc by ~10%.
     self.previous_stack_top = []
 
     # Stack of _PreprocessorInfo objects.
@@ -3119,7 +3118,7 @@ class NestingState(object):
     #
     # The stack is always pushed/popped and not modified in place, so
     # we can just do a shallow copy instead of copy.deepcopy.  Using
-    # deepcopy would slow down clint by ~28%.
+    # deepcopy would slow down prettyc by ~28%.
     if self.stack:
       self.previous_stack_top = self.stack[-1]
     else:
@@ -3290,7 +3289,7 @@ class NestingState(object):
     """
     # Note: This test can result in false positives if #ifdef constructs
     # get in the way of brace matching. See the testBuildClass test in
-    # clint_unittest.py for an example of this.
+    # prettyc_unittest.py for an example of this.
     for obj in self.stack:
       if isinstance(obj, _ClassInfo):
         error(filename, obj.starting_linenum, 'build/class', 5,
@@ -4292,30 +4291,6 @@ def CheckBraces(filename, clean_lines, linenum, error):
       error(filename, linenum, 'whitespace/braces', 4,
             '{ should almost always be at the end of the previous line')
 
-  # An else clause should be on the same line as the preceding closing brace.
-  if Match(r'\s*else\b\s*(?:if\b|\{|$)', line):
-    prevline = GetPreviousNonBlankLine(clean_lines, linenum)[0]
-    if Match(r'\s*}\s*$', prevline):
-      error(filename, linenum, 'whitespace/newline', 4,
-            'An else should appear on the same line as the preceding }')
-
-  # If braces come on one side of an else, they should be on both.
-  # However, we have to worry about "else if" that spans multiple lines!
-  if Search(r'else if\s*\(', line):       # could be multi-line if
-    brace_on_left = bool(Search(r'}\s*else if\s*\(', line))
-    # find the ( after the if
-    pos = line.find('else if')
-    pos = line.find('(', pos)
-    if pos > 0:
-      (endline, _, endpos) = CloseExpression(clean_lines, linenum, pos)
-      brace_on_right = endline[endpos:].find('{') != -1
-      if brace_on_left != brace_on_right:    # must be brace after if
-        error(filename, linenum, 'readability/braces', 5,
-              'If an else has a brace on one side, it should have it on both')
-  elif Search(r'}\s*else[^{]*$', line) or Match(r'[^}]*else\s*{', line):
-    error(filename, linenum, 'readability/braces', 5,
-          'If an else has a brace on one side, it should have it on both')
-
   # Likewise, an else should never have the else clause on the same line
   if Search(r'\belse [^\s{]', line) and not Search(r'\belse if\b', line):
     error(filename, linenum, 'whitespace/newline', 4,
@@ -4795,7 +4770,7 @@ def CheckAltTokens(filename, clean_lines, linenum, error):
   # it provides a way to workaround this warning for people who use
   # multi-line comments in preprocessor macros.
   #
-  # TODO(unknown): remove this once clint has better support for
+  # TODO(unknown): remove this once prettyc has better support for
   # multi-line comments.
   if line.find('/*') >= 0 or line.find('*/') >= 0:
     return
@@ -5007,7 +4982,7 @@ def _ClassifyInclude(fileinfo, include, used_angle_brackets, include_order="defa
   """Figures out what kind of header 'include' is.
 
   Args:
-    fileinfo: The current file clint is running over. A FileInfo instance.
+    fileinfo: The current file prettyc is running over. A FileInfo instance.
     include: The path to a #included file.
     used_angle_brackets: True if the #include used <> rather than "".
     include_order: "default" or other value allowed in program arguments
@@ -5076,7 +5051,6 @@ def _ClassifyInclude(fileinfo, include, used_angle_brackets, include_order="defa
     return _POSSIBLE_MY_HEADER
 
   return _OTHER_HEADER
-
 
 
 def CheckIncludeLine(filename, clean_lines, linenum, include_state, error):
@@ -5192,7 +5166,7 @@ def _GetTextInside(text, start_pattern):
     The extracted text.
     None if either the opening string or ending punctuation could not be found.
   """
-  # TODO(unknown): Audit clint.py to see what places could be profitably
+  # TODO(unknown): Audit prettyc.py to see what places could be profitably
   # rewritten to use _GetTextInside (and use inferior regexp matching today).
 
   # Give opening punctuations to get the matching close-punctuations.
@@ -5304,18 +5278,6 @@ def CheckLanguage(filename, clean_lines, linenum, file_extension,
     # TODO(unknown): check that classes declare or disable copy/assign
     #                (level 1 error)
     pass
-
-  # Check if people are using the verboten C basic types.  The only exception
-  # we regularly allow is "unsigned short port" for port.
-  if Search(r'\bshort port\b', line):
-    if not Search(r'\bunsigned short port\b', line):
-      error(filename, linenum, 'runtime/int', 4,
-            'Use "unsigned short" for ports, not "short"')
-  else:
-    match = Search(r'\b(short|long(?! +double)|long long)\b', line)
-    if match:
-      error(filename, linenum, 'runtime/int', 4,
-            'Use int16/int64/etc, rather than the C type %s' % match.group(1))
 
   # Check if some verboten operator overloading is going on
   # TODO(unknown): catch out-of-line unary operator&:
@@ -6153,7 +6115,7 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
   abs_filename = FileInfo(filename).FullName()
 
   # For Emacs's flymake.
-  # If clint is invoked from Emacs's flymake, a temporary file is generated
+  # If prettyc is invoked from Emacs's flymake, a temporary file is generated
   # by flymake and that file name might end with '_flymake.cc'. In that case,
   # restore original file name here so that the corresponding header file can be
   # found.
@@ -6555,7 +6517,7 @@ def ProcessConfigOverrides(filename):
     if not base_name:
       break  # Reached the root directory.
 
-    cfg_file = os.path.join(abs_path, "CLINT.cfg")
+    cfg_file = os.path.join(abs_path, ".prettyc")
     abs_filename = abs_path
     if not os.path.isfile(cfg_file):
       continue
@@ -6578,43 +6540,44 @@ def ProcessConfigOverrides(filename):
             # When matching exclude_files pattern, use the base_name of
             # the current file name or the directory name we are processing.
             # For example, if we are checking for lint errors in /foo/bar/baz.cc
-            # and we found the .cfg file at /foo/CLINT.cfg, then the config
+            # and we found the .cfg file at /foo/.prettyc, then the config
             # file's "exclude_files" filter is meant to be checked against "bar"
             # and not "baz" nor "bar/baz.cc".
             if base_name:
               pattern = re.compile(val)
               if pattern.match(base_name):
-                if _clint_state.quiet:
+                if _prettyc_state.quiet:
                   # Suppress "Ignoring file" warning when using --quiet.
                   return False
-                _clint_state.PrintInfo('Ignoring "%s": file excluded by "%s". '
-                                 'File path component "%s" matches '
-                                 'pattern "%s"\n' %
-                                 (filename, cfg_file, base_name, val))
+                if __verbose__:
+                    _prettyc_state.PrintInfo('Ignoring "%s": file excluded by "%s". '
+                                     'File path component "%s" matches '
+                                     'pattern "%s"\n' %
+                                     (filename, cfg_file, base_name, val))
                 return False
           elif name == 'linelength':
             global _line_length
             try:
               _line_length = int(val)
             except ValueError:
-              _clint_state.PrintError('Line length must be numeric.')
+              _prettyc_state.PrintError('Line length must be numeric.')
           elif name == 'extensions':
             ProcessExtensionsOption(val)
           elif name == 'root':
             global _root
-            # root directories are specified relative to CLINT.cfg dir.
+            # root directories are specified relative to .prettyc dir.
             _root = os.path.join(os.path.dirname(cfg_file), val)
           elif name == 'headers':
             ProcessHppHeadersOption(val)
           elif name == 'includeorder':
             ProcessIncludeOrderOption(val)
           else:
-            _clint_state.PrintError(
+            _prettyc_state.PrintError(
                 'Invalid configuration option (%s) in file %s\n' %
                 (name, cfg_file))
 
     except IOError:
-      _clint_state.PrintError(
+      _prettyc_state.PrintError(
           "Skipping config file '%s': Can't open for reading\n" % cfg_file)
       keep_looking = False
 
@@ -6642,7 +6605,7 @@ def ProcessFile(filename, vlevel, extra_check_functions=None):
 
   _SetVerboseLevel(vlevel)
   _BackupFilters()
-  old_errors = _clint_state.error_count
+  old_errors = _prettyc_state.error_count
 
   if not ProcessConfigOverrides(filename):
     _RestoreFilters()
@@ -6677,7 +6640,7 @@ def ProcessFile(filename, vlevel, extra_check_functions=None):
         lf_lines.append(linenum + 1)
 
   except IOError:
-    _clint_state.PrintError(
+    _prettyc_state.PrintError(
         "Skipping input '%s': Can't open for reading\n" % filename)
     _RestoreFilters()
     return
@@ -6685,10 +6648,10 @@ def ProcessFile(filename, vlevel, extra_check_functions=None):
   # Note, if no dot is found, this will give the entire filename as the ext.
   file_extension = filename[filename.rfind('.') + 1:]
 
-  # When reading from stdin, the extension is unknown, so no clint tests
+  # When reading from stdin, the extension is unknown, so no prettyc tests
   # should rely on the extension.
   if filename != '-' and file_extension not in GetAllExtensions():
-    _clint_state.PrintError('Ignoring %s; not a valid file name '
+    _prettyc_state.PrintError('Ignoring %s; not a valid file name '
                      '(%s)\n' % (filename, ', '.join(GetAllExtensions())))
   else:
     ProcessFileData(filename, file_extension, lines, Error,
@@ -6714,8 +6677,8 @@ def ProcessFile(filename, vlevel, extra_check_functions=None):
 
   # # Suppress printing anything if --quiet was passed unless the error
   # # count has increased after processing this file.
-  # if not _clint_state.quiet or old_errors != _clint_state.error_count:
-  #   _clint_state.PrintInfo('Done processing %s\n' % filename)
+  if __verbose__ and not _prettyc_state.quiet or old_errors != _prettyc_state.error_count:
+    _prettyc_state.PrintInfo('Done processing %s\n' % filename)
   _RestoreFilters()
 
 
@@ -6736,8 +6699,8 @@ def PrintUsage(message):
     sys.exit(0)
 
 def PrintVersion():
-  sys.stdout.write('Clint (https://github.com/pylover/clint)\n')
-  sys.stdout.write('clint ' + __VERSION__ + '\n')
+  sys.stdout.write('PrettyC (https://github.com/pylover/prettyc)\n')
+  sys.stdout.write('Version ' + __version__ + '\n')
   sys.stdout.write('Python ' + sys.version + '\n')
   sys.exit(0)
 
@@ -6919,20 +6882,20 @@ def main():
     # if we try to print something containing non-ASCII characters.
     sys.stderr = codecs.StreamReader(sys.stderr, 'replace')
 
-    _clint_state.ResetErrorCounts()
+    _prettyc_state.ResetErrorCounts()
     for filename in filenames:
-      ProcessFile(filename, _clint_state.verbose_level)
+      ProcessFile(filename, _prettyc_state.verbose_level)
     # If --quiet is passed, suppress printing error count unless there are errors.
-    if not _clint_state.quiet or _clint_state.error_count > 0:
-      _clint_state.PrintErrorCounts()
+    if not _prettyc_state.quiet or _prettyc_state.error_count > 0:
+      _prettyc_state.PrintErrorCounts()
 
-    if _clint_state.output_format == 'junit':
-      sys.stderr.write(_clint_state.FormatJUnitXML())
+    if _prettyc_state.output_format == 'junit':
+      sys.stderr.write(_prettyc_state.FormatJUnitXML())
 
   finally:
     sys.stderr = backup_err
 
-  sys.exit(_clint_state.error_count > 0)
+  sys.exit(_prettyc_state.error_count > 0)
 
 
 if __name__ == '__main__':

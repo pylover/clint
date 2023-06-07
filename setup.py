@@ -1,88 +1,45 @@
-#! /usr/bin/env python
+from setuptools import setup
+import os.path
+import re
 
-from setuptools import setup, Command
-from subprocess import check_call
-from distutils.spawn import find_executable
-import clint as clint
 
-class Cmd(Command):
-    '''
-    Superclass for other commands to run via setup.py, declared in setup.cfg.
-    These commands will auto-install setup_requires in a temporary folder.
-    '''
-    user_options = [
-      ('executable', 'e', 'The executable to use for the command')
+# reading package's version (same way sqlalchemy does)
+with open(os.path.join(os.path.dirname(__file__), 'prettyc.py')) as v_file:
+    package_version = \
+        re.compile('.*__version__ = \'(.*?)\'', re.S)\
+        .match(v_file.read())\
+        .group(1)
+
+
+setup(
+    name='prettyc',
+    version=package_version,
+    author='Vahid Mardani',
+    author_email='vahid.mardani@gmail.com',
+    url='http://github.com/pylover/prettyc',
+    description='Fork of Google\'s cpplint, modified to work only with C.',
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',  # For PyPI
+    py_modules=['prettyc'],
+    keywords=['lint', 'python', 'c'],
+    license='BSD-3-Clause',
+    entry_points={
+        'console_scripts': [
+            'prettyc = prettyc:main'
+        ]
+    },
+    classifiers=[
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: C',
+        'Development Status :: 5 - Production/Stable',
+        'Environment :: Console',
+        'Topic :: Software Development :: Quality Assurance',
+        'License :: OSI Approved :: BSD License'
     ]
-
-    def initialize_options(self):
-        self.executable = find_executable(self.executable)
-
-    def finalize_options(self):
-        pass
-
-    def execute(self, *k):
-        check_call((self.executable,) + k)
-
-
-class Lint(Cmd):
-    '''run with python setup.py lint'''
-    description = 'Run linting of the code'
-    user_options = Cmd.user_options + [
-      ('jobs', 'j', 'Use multiple processes to speed up the linting')
-    ]
-    executable = 'pylint'
-
-    def run(self):
-        self.execute('clint.py')
-
-# some pip versions bark on comments (e.g. on travis)
-def read_without_comments(filename):
-    with open(filename) as f:
-        return [line for line in f.read().splitlines() if not len(line) == 0 and not line.startswith('#')]
-
-test_required = read_without_comments('test-requirements')
-
-setup(name='clint',
-      version=clint.__VERSION__,
-      py_modules=['clint'],
-      # generate platform specific start script
-      entry_points={
-          'console_scripts': [
-              'clint = clint:main'
-          ]
-      },
-      install_requires=[],
-      url='https://github.com/pylover/clint',
-      download_url='https://github.com/pylover/clint',
-      keywords=['lint', 'python', 'c'],
-      maintainer='clint Developers',
-      maintainer_email='see_github@nospam.com',
-      classifiers=['Programming Language :: Python',
-                   'Programming Language :: Python :: 2',
-                   'Programming Language :: Python :: 2.7',
-                   'Programming Language :: Python :: 3',
-                   'Programming Language :: Python :: 3.6',
-                   'Programming Language :: Python :: 3.7',
-                   'Programming Language :: Python :: 3.8',
-                   'Programming Language :: Python :: 3.9',
-                   'Programming Language :: Python :: 3.10',
-                   'Programming Language :: C++',
-                   'Development Status :: 5 - Production/Stable',
-                   'Environment :: Console',
-                   'Topic :: Software Development :: Quality Assurance',
-                   'License :: Freely Distributable'],
-      description='Automated checker to ensure C++ files follow Google\'s style guide',
-      long_description=open('README.rst').read(),
-      license='BSD-3-Clause',
-      setup_requires=[
-          "pytest-runner==5.2"
-      ],
-      tests_require=test_required,
-      # extras_require allow pip install .[dev]
-      extras_require={
-          'test': test_required,
-          'dev': read_without_comments('dev-requirements') + test_required
-      },
-      cmdclass={
-          'lint': Lint
-      })
+)
