@@ -63,7 +63,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__version__ = '1.0.4'
+__version__ = '1.0.5'
 __verbose__ = False
 
 try:
@@ -383,11 +383,6 @@ _OTHER_NOLINT_CATEGORY_PREFIXES = [
 # off by default (i.e., categories that must be enabled by the --filter= flags).
 # All entries here should start with a '-' or '+', as in the --filter= flag.
 _DEFAULT_FILTERS = ['-build/include_alpha']
-
-# The default list of categories suppressed for C (not C++) files.
-_DEFAULT_C_SUPPRESSED_CATEGORIES = [
-    'readability/casting',
-    ]
 
 # The default list of categories suppressed for Linux Kernel files.
 _DEFAULT_KERNEL_SUPPRESSED_CATEGORIES = [
@@ -845,10 +840,6 @@ _MATCH_ASM = re.compile(r'^\s*(?:asm|_asm|__asm|__asm__)'
                         r'(?:\s+(volatile|__volatile__))?'
                         r'\s*[{(]')
 
-# Match strings that indicate we're working on a C (not C++) file.
-_SEARCH_C_FILE = re.compile(r'\b(?:LINT_C_FILE|'
-                            r'vim?:\s*.*(\s*|:)filetype=c(\s*|:|$))')
-
 # Match string that indicates we're working on a Linux Kernel file.
 _SEARCH_KERNEL_FILE = re.compile(r'\b(?:LINT_KERNEL_FILE)')
 
@@ -1024,9 +1015,6 @@ def ProcessGlobalSuppresions(lines):
            last element being empty if the file is terminated with a newline.
   """
   for line in lines:
-    if _SEARCH_C_FILE.search(line):
-      for category in _DEFAULT_C_SUPPRESSED_CATEGORIES:
-        _global_error_suppressions[category] = True
     if _SEARCH_KERNEL_FILE.search(line):
       for category in _DEFAULT_KERNEL_SUPPRESSED_CATEGORIES:
         _global_error_suppressions[category] = True
@@ -5676,24 +5664,6 @@ def CheckCasts(filename, clean_lines, linenum, error):
     if Match(r'\([^()]+\)\s*\[', match.group(3)):
       return
 
-    # Other things to ignore:
-    # - Function pointers
-    # - Casts to pointer types
-    # - Placement new
-    # - Alias declarations
-    matched_funcptr = match.group(3)
-    if (matched_new_or_template is None and
-        not (matched_funcptr and
-             (Match(r'\((?:[^() ]+::\s*\*\s*)?[^() ]+\)\s*\(',
-                    matched_funcptr) or
-              matched_funcptr.startswith('(*)'))) and
-        not Match(r'\s*using\s+\S+\s*=\s*' + matched_type, line) and
-        not Search(r'new\(\S+\)\s*' + matched_type, line)):
-      error(filename, linenum, 'readability/casting', 4,
-            'Using deprecated casting style.  '
-            'Use static_cast<%s>(...) instead' %
-            matched_type)
-
   if not expecting_function:
     CheckCStyleCast(filename, clean_lines, linenum, 'static_cast',
                     r'\((int|float|double|bool|char|u?int(16|32|64)|size_t)\)', error)
@@ -5798,11 +5768,6 @@ def CheckCStyleCast(filename, clean_lines, linenum, cast_type, pattern, error):
   if Match(r'^\s*(?:;|const\b|throw\b|final\b|override\b|[=>{),]|->)',
            remainder):
     return False
-
-  # At this point, all that should be left is actual casts.
-  error(filename, linenum, 'readability/casting', 4,
-        'Using C-style cast.  Use %s<%s>(...) instead' %
-        (cast_type, match.group(1)))
 
   return True
 
