@@ -63,7 +63,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__version__ = '1.0.5'
+__version__ = '1.0.6'
 __verbose__ = False
 
 try:
@@ -5392,15 +5392,6 @@ def CheckPrintf(filename, clean_lines, linenum, error):
     error(filename, linenum, 'runtime/printf', 3,
           'If you can, use sizeof(%s) instead of %s as the 2nd arg '
           'to snprintf.' % (match.group(1), match.group(2)))
-
-  # Check if some verboten C functions are being used.
-  if Search(r'\bsprintf\s*\(', line):
-    error(filename, linenum, 'runtime/printf', 5,
-          'Never use sprintf. Use snprintf instead.')
-  match = Search(r'\b(strcpy|strcat)\s*\(', line)
-  if match:
-    error(filename, linenum, 'runtime/printf', 4,
-          'Almost always, snprintf is better than %s' % match.group(1))
 
 
 def IsDerivedFunction(clean_lines, linenum):
