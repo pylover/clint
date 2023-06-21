@@ -63,7 +63,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__version__ = '1.0.6'
+__version__ = '1.0.7'
 __verbose__ = False
 
 try:
@@ -139,7 +139,7 @@ Syntax: prettyc.py [--verbose=#] [--output=emacs|eclipse|vs7|junit|sed|gsed]
 
       Examples: --filter=-whitespace,+whitespace/braces
                 --filter=-whitespace,-runtime/printf,+runtime/printf_format
-                --filter=-,+build/include_what_you_use
+                --filter=-,+build/include
 
       To see a list of all the categories used in prettyc, pass no arg:
          --filter=
@@ -302,7 +302,6 @@ _ERROR_CATEGORIES = [
     'build/include',
     'build/include_alpha',
     'build/include_order',
-    'build/include_what_you_use',
     'build/namespaces_headers',
     'build/namespaces_literals',
     'build/namespaces',
@@ -6042,14 +6041,6 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
     for extension in GetNonHeaderExtensions():
       if filename.endswith('.' + extension):
         return
-
-  # All the lines have been processed, report the errors found.
-  for required_header_unstripped in sorted(required, key=required.__getitem__):
-    template = required[required_header_unstripped][1]
-    if required_header_unstripped.strip('<>"') not in include_dict:
-      error(filename, required[required_header_unstripped][0],
-            'build/include_what_you_use', 4,
-            'Add #include ' + required_header_unstripped + ' for ' + template)
 
 
 _RE_PATTERN_EXPLICIT_MAKEPAIR = re.compile(r'\bmake_pair\s*<')
