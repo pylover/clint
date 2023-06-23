@@ -63,7 +63,7 @@ import xml.etree.ElementTree
 # if empty, use defaults
 _valid_extensions = set([])
 
-__version__ = '1.0.7'
+__version__ = '1.0.8'
 __verbose__ = False
 
 try:
@@ -321,7 +321,6 @@ _ERROR_CATEGORIES = [
     'readability/nolint',
     'readability/nul',
     'readability/strings',
-    'readability/todo',
     'readability/utf8',
     'runtime/casting',
     'runtime/explicit',
@@ -3661,17 +3660,11 @@ def CheckComment(line, filename, linenum, next_line_start, error):
           error(filename, linenum, 'whitespace/todo', 2,
                 'Too many spaces before TODO')
 
-        username = match.group(2)
-        if not username:
-          error(filename, linenum, 'readability/todo', 2,
-                'Missing username in TODO; it should look like '
-                '"// TODO(my_username): Stuff."')
-
         middle_whitespace = match.group(3)
         # Comparisons made explicit for correctness -- pylint: disable=g-explicit-bool-comparison
         if middle_whitespace != ' ' and middle_whitespace != '':
           error(filename, linenum, 'whitespace/todo', 2,
-                'TODO(my_username) should be followed by a space')
+                'TODO: should be followed by a space')
 
       # If the comment contains an alphanumeric character, there
       # should be a space somewhere between it and the // unless
